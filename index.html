@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KP Astrology Calculator & Predictor</title>
+    <!-- PDF ထုတ်ရန် Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Pyidaungsu', Arial, sans-serif; background-color: #eef2f3; margin: 0; padding: 20px; }
+        h2 { text-align: center; color: #2c3e50; }
+        .container { max-width: 850px; background: white; margin: auto; padding: 25px; border-radius: 10px; box-shadow: 0px 5px 15px rgba(0,0,0,0.15); }
+        .input-group { display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; }
+        .input-group div { width: 48%; }
+        .full-width { width: 100% !important; margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        input, select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #bdc3c7; border-radius: 5px; font-size: 15px; }
+        button { width: 100%; padding: 14px; background-color: #2980b9; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        button:hover { background-color: #1c5980; }
+        .pdf-btn { background-color: #27ae60; margin-top: 10px; display: none; }
+        .pdf-btn:hover { background-color: #1e8449; }
+        .results-area { margin-top: 25px; padding: 15px; border: 2px dashed #3498db; border-radius: 8px; background-color: #f9fbfd; display: none; }
+        h3.display-name { text-align: center; color: #d35400; margin-top: 0; font-size: 22px; }
+        h4 { color: #2c3e50; margin-bottom: 8px; border-bottom: 2px solid #bdc3c7; padding-bottom: 5px; margin-top: 25px;}
+        
+        /* Prediction, Daily & RP Box */
+        .prediction-box { background: #e8f8f5; border-left: 5px solid #1abc9c; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .daily-box { background: #eaf2f8; border-left: 5px solid #3498db; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .rp-box { background: #f4ecf7; border-left: 5px solid #8e44ad; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .curr-rp-box { background: #fef9e7; border-left: 5px solid #f39c12; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        
+        .pred-level { font-weight: bold; font-size: 16px; color: #16a085; margin-bottom: 8px; border-bottom: 1px solid #a3e4d7; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        .daily-level { font-weight: bold; font-size: 16px; color: #2980b9; margin-bottom: 8px; border-bottom: 1px solid #a9cce3; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        .rp-level { font-weight: bold; font-size: 16px; color: #8e44ad; margin-bottom: 8px; border-bottom: 1px solid #d7bde2; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        .curr-rp-level { font-weight: bold; font-size: 16px; color: #d35400; margin-bottom: 8px; border-bottom: 1px solid #f9e79f; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
+        
+        .pred-text { font-size: 15px; color: #333; margin: 5px 0 10px 10px; line-height: 1.6; border-left: 3px solid #1abc9c; padding-left: 10px; }
+        .daily-text { font-size: 15px; color: #333; margin: 5px 0 10px 10px; line-height: 1.6; border-left: 3px solid #3498db; padding-left: 10px; }
+        .pred-sigs { font-size: 14px; color: #34495e; font-weight: bold; margin-bottom: 12px; background: #fff; padding: 10px; border-radius: 5px; border: 1px dashed #bdc3c7;}
+        .date-badge { background-color: #d1f2eb; color: #0e6655; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: normal; border: 1px solid #1abc9c; }
+        .daily-badge { background-color: #d6eaf8; color: #154360; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: normal; border: 1px solid #3498db; }
+        .rp-badge { background-color: #ebdef0; color: #512e5f; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: normal; border: 1px solid #8e44ad; }
+        .curr-rp-badge { background-color: #fdebd0; color: #7e5109; padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: normal; border: 1px solid #f39c12; }
+        .highlight { color: #d35400; font-size: 16px; }
+        
+        /* Chart CSS */
+        .chart-container { display: flex; justify-content: center; margin-bottom: 20px; }
+        .chart-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 100px); gap: 2px; background-color: #d35400; border: 2px solid #d35400; max-width: 450px; width: 100%; }
+        .chart-box { background-color: #fff; padding: 5px; font-size: 14px; text-align: center; display: flex; flex-direction: column; position: relative; }
+        .sign-label { position: absolute; top: 2px; left: 4px; font-size: 10px; color: #7f8c8d; }
+        .planet-item { margin-top: auto; font-weight: bold; color: #2c3e50; line-height: 1.4; }
+        .lagna-text { color: #c0392b; font-weight: bold; }
+        .center-box { grid-column: 2 / 4; grid-row: 2 / 4; background-color: #fcf6e5; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; color: #d35400; }
+        
+        /* Dasha Accordion UI */
+        .dasha-wrap { background: #fff; padding: 10px; border-radius: 5px; border: 1px solid #bdc3c7; }
+        .d-row { display: flex; justify-content: space-between; width: 100%; padding-left: 5px; align-items: center; }
+        .d-title { font-weight: bold; font-size: 15px; }
+        .d-dates { font-size: 14px; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 12px; }
+        .md-summary { background: #8e44ad; color: white; padding: 12px; margin-bottom: 4px; cursor: pointer; border-radius: 5px; list-style: none; display: flex; outline: none;}
+        .md-active { background: #2ecc71; border-left: 5px solid #27ae60; }
+        .ad-details { margin-left: 20px; border-left: 2px dashed #9b59b6; padding-left: 10px; margin-bottom: 2px;}
+        .ad-summary { background: #f39c12; color: white; padding: 10px; margin: 4px 0; cursor: pointer; border-radius: 4px; list-style: none; display: flex; outline: none;}
+        .ad-active { background: #2ecc71; }
+        .pd-item { background: #ecf0f1; color: #2c3e50; padding: 8px 12px; margin: 3px 0 3px 15px; border-radius: 4px; display: flex; justify-content: space-between; border-left: 4px solid #e67e22; font-size: 14px;}
+        .pd-active { background: #d4efdf; border-left: 4px solid #27ae60; font-weight: bold; }
+        details > summary::-webkit-details-marker { display: none; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: center; font-size: 15px; }
+        th { background-color: #34495e; color: white; }
+        .sig-table th { background-color: #27ae60; font-size: 13px; }
+        .badge { background: #e74c3c; color: white; padding: 3px 8px; border-radius: 12px; margin: 2px; display: inline-block; font-size: 13px; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f2f6f8; }
+        
+        /* Footer Credits */
+        .footer-credits { text-align: center; margin-top: 40px; padding: 25px; border-top: 2px dashed #bdc3c7; background-color: #fdfefe; border-radius: 0 0 10px 10px; }
+        .footer-title { font-weight: bold; font-size: 19px; color: #2980b9; margin-bottom: 5px; }
+        .footer-sub { font-size: 16px; color: #34495e; font-weight: bold; }
+        .footer-edu { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+        .footer-contact { display: inline-block; margin-top: 15px; background: #eef2f3; padding: 10px 20px; border-radius: 8px; border: 1px solid #bdc3c7; font-size: 14px; color: #2c3e50; line-height: 1.8; text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div class="container" style="border-radius: 10px 10px 0 0;">
+        <h2>KP ဗေဒင် ဇာတာဖွဲ့နှင့် အဟောစနစ်</h2>
+        
+        <div class="full-width">
+            <label>ဇာတာရှင်အမည်</label>
+            <input type="text" id="personName" placeholder="အမည်ရိုက်ထည့်ပါ">
+        </div>
+
+        <div class="input-group">
+            <div><label>မွေးနှစ် (Year - e.g. 1990)</label><input type="number" id="year" placeholder="1990"></div>
+            <div><label>မွေးလ (Month - 1 to 12)</label><input type="number" id="month" placeholder="7"></div>
+        </div>
+        <div class="input-group">
+            <div><label>မွေးရက် (Day - 1 to 31)</label><input type="number" id="day" placeholder="22"></div>
+            <div><label>မြို့ရွေးချယ်ပါ</label>
+                <select id="citySelect" onchange="updateCoordinates()">
+                    <option value="22.33,96.79">နောင်ချို</option>
+                    <option value="16.80,96.15">ရန်ကုန်</option>
+                    <option value="21.97,96.08">မန္တလေး</option>
+                </select>
+            </div>
+        </div>
+        <div class="input-group">
+            <div><label>နာရီ (Hour - 0 to 23)</label><input type="number" id="hour" placeholder="2"></div>
+            <div><label>မိနစ် (Minute - 0 to 59)</label><input type="number" id="minute" placeholder="56"></div>
+        </div>
+        <div class="input-group">
+            <div><label>Latitude</label><input type="number" step="0.01" id="lat" value="22.33"></div>
+            <div><label>Longitude</label><input type="number" step="0.01" id="lon" value="96.79"></div>
+        </div>
+        
+        <button onclick="calculateChart()">ဇာတာဖွဲ့၍ ဟောစာတမ်းထုတ်မည်</button>
+        <button id="downloadPdfBtn" class="pdf-btn" onclick="downloadPDF()">📄 PDF ဖြင့် သိမ်းဆည်းမည် (Download PDF)</button>
+
+        <div id="resultsArea" class="results-area">
+            <div id="pdfContent">
+                <h3 id="displayName" class="display-name"></h3>
+                
+                <h4>⭐ မူလဇာတာ စိုးမိုးဂြိုဟ်များ (Natal Ruling Planets)</h4>
+                <div id="rulingPlanetsContent" class="rp-box"></div>
+
+                <h4>⭐ ယခုလက်ရှိ စိုးမိုးဂြိုဟ်များ (Current Ruling Planets)</h4>
+                <div id="currentRulingPlanetsContent" class="curr-rp-box"></div>
+
+                <h4>🌙 ယခု လက်ရှိ စန်း (လ) ဖြတ်သန်းမှုနှင့် နေ့စဉ်အဟော</h4>
+                <div id="dailyContent" class="daily-box"></div>
+
+                <h4>🔮 ယခု လက်ရှိ ဖြတ်သန်းနေသော ဒသာကာလအဟော</h4>
+                <div id="predictionContent" class="prediction-box"></div>
+
+                <h4>ရာသီစက် (Rasi Chart)</h4>
+                <div class="chart-container">
+                    <div class="chart-grid">
+                        <div class="chart-box" style="grid-area: 1/1/2/2;"><span class="sign-label">မိန်</span><div id="box-မိန်" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 1/2/2/3;"><span class="sign-label">မိဿ</span><div id="box-မိဿ" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 1/3/2/4;"><span class="sign-label">ပြိဿ</span><div id="box-ပြိဿ" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 1/4/2/5;"><span class="sign-label">မေထုန်</span><div id="box-မေထုန်" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 2/1/3/2;"><span class="sign-label">ကုံ</span><div id="box-ကုံ" class="planet-item"></div></div>
+                        <div class="center-box">ရာသီစက်</div>
+                        <div class="chart-box" style="grid-area: 2/4/3/5;"><span class="sign-label">ကရကဋ်</span><div id="box-ကရကဋ်" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 3/1/4/2;"><span class="sign-label">မကာရ</span><div id="box-မကာရ" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 3/4/4/5;"><span class="sign-label">သိဟ်</span><div id="box-သိဟ်" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 4/1/5/2;"><span class="sign-label">ဓနု</span><div id="box-ဓနု" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 4/2/5/3;"><span class="sign-label">ဗြိစ္ဆာ</span><div id="box-ဗြိစ္ဆာ" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 4/3/5/4;"><span class="sign-label">တူ</span><div id="box-တူ" class="planet-item"></div></div>
+                        <div class="chart-box" style="grid-area: 4/4/5/5;"><span class="sign-label">ကန်</span><div id="box-ကန်" class="planet-item"></div></div>
+                    </div>
+                </div>
+
+                <h4>ဝိံသောတ္တရီ ဒသာ ၃ ဆင့် <small style="font-weight:normal;">*(လက်ရှိကာလကို အစိမ်းရောင်ဖြင့် ပြထားပါသည်)*</small></h4>
+                <div id="dashaAccordion" class="dasha-wrap"></div>
+
+                <h4>ဘာဝအကျိုးဆောင် ဇယား (KP Significators)</h4>
+                <table class="sig-table">
+                    <thead>
+                        <tr>
+                            <th>ဂြိုဟ်</th>
+                            <th>အဆင့် ၁ (နက္ခတ်သခင် ရပ်)</th>
+                            <th>အဆင့် ၂ (နက္ခတ်သခင် ပိုင်)</th>
+                            <th>အဆင့် ၃ (မိမိ ရပ်)</th>
+                            <th>အဆင့် ၄ (မိမိ ပိုင်)</th>
+                            <th>အကျိုးပေးမည့် ဘာဝများ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sigBody"></tbody>
+                </table>
+
+                <h4>ဂြိုဟ်အနေအထားများ</h4>
+                <table>
+                    <thead><tr><th>ဂြိုဟ်</th><th>ဒီဂရီ</th><th>ရာသီ</th><th>ရာသီသခင်</th><th>နက္ခတ်သခင်</th><th>ဆပ်လော့</th></tr></thead>
+                    <tbody id="planetBody"></tbody>
+                </table>
+
+                <h4>ဘာဝဇယား</h4>
+                <table>
+                    <thead><tr><th>ဘာဝ</th><th>ဒီဂရီ</th><th>ရာသီ</th><th>ရာသီသခင်</th><th>နက္ခတ်သခင်</th><th>ဆပ်လော့</th></tr></thead>
+                    <tbody id="cuspBody"></tbody>
+                </table>
+                
+                <!-- Custom Footer / Credits -->
+                <div class="footer-credits">
+                    <div class="footer-title">တီထွင်ဖန်တီးသူ - ဆရာအောင်ဟိန်းသန့်</div>
+                    <div class="footer-sub">KP Astrologer</div>
+                    <div class="footer-edu">B.C.Sc | B.Sc (Kp Astro-Palmistry)</div>
+                    <div class="footer-contact">
+                        📞 <b>ဖုန်း / Viber:</b> 09688684517 <br>
+                        📧 <b>အီးမေးလ် (Email):</b> aungheinthantdma@gmail.com
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateCoordinates() {
+            const citySelect = document.getElementById('citySelect').value;
+            const coords = citySelect.split(',');
+            document.getElementById('lat').value = coords[0];
+            document.getElementById('lon').value = coords[1];
+        }
+
+        async function calculateChart() {
+            // Frontend Input Validation (အချက်အလက် ပြည့်စုံမှု စစ်ဆေးခြင်း)
+            const yearStr = document.getElementById('year').value;
+            const monthStr = document.getElementById('month').value;
+            const dayStr = document.getElementById('day').value;
+            const hourStr = document.getElementById('hour').value;
+            const minuteStr = document.getElementById('minute').value;
+            
+            if (!yearStr || !monthStr || !dayStr || !hourStr || !minuteStr) {
+                alert("⚠️ ကျေးဇူးပြု၍ မွေးနှစ်၊ လ၊ ရက်၊ နာရီ၊ မိနစ် အားလုံးကို ပြည့်စုံစွာ ထည့်သွင်းပေးပါ။\n(ဥပမာ - မွေးနှစ် = 1945, မွေးရက် = 19)");
+                return;
+            }
+
+            const h = parseFloat(hourStr) || 0;
+            const m = parseFloat(minuteStr) || 0;
+            const decimalHour = h + (m / 60);
+
+            const data = {
+                year: parseInt(yearStr),
+                month: parseInt(monthStr),
+                day: parseInt(dayStr),
+                hour: decimalHour,
+                lat: parseFloat(document.getElementById('lat').value),
+                lon: parseFloat(document.getElementById('lon').value)
+            };
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/calculate-chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error("Server Error");
+                }
+
+                const result = await response.json();
+                
+                if (result.status === "success") {
+                    document.getElementById('displayName').innerText = (document.getElementById('personName').value || "အမည်မသိ") + " ၏ KP ဇာတာခွင်";
+
+                    // Natal Ruling Planets (RP) UI
+                    const rpBox = document.getElementById('rulingPlanetsContent');
+                    const rp = result.ruling_planets;
+                    rpBox.innerHTML = `
+                    <div class="rp-level">
+                        <span>မွေးဖွားချိန် မူလစိုးမိုးဂြိုဟ်များ (Natal 5 Ruling Planets)</span>
+                        <span class="rp-badge">🌟 Natal RPs</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                        <span class="badge" style="background: #8e44ad; font-size: 14px; padding: 6px 12px;">လဂ်ရာသီသခင်: ${rp.lagna_sign_lord}</span>
+                        <span class="badge" style="background: #8e44ad; font-size: 14px; padding: 6px 12px;">လဂ်နက္ခတ်သခင်: ${rp.lagna_star_lord}</span>
+                        <span class="badge" style="background: #2980b9; font-size: 14px; padding: 6px 12px;">စန်းရာသီသခင်: ${rp.moon_sign_lord}</span>
+                        <span class="badge" style="background: #2980b9; font-size: 14px; padding: 6px 12px;">စန်းနက္ခတ်သခင်: ${rp.moon_star_lord}</span>
+                        <span class="badge" style="background: #d35400; font-size: 14px; padding: 6px 12px;">နေ့နံသခင်: ${rp.day_lord}</span>
+                    </div>`;
+
+                    // Current Ruling Planets (Current RP) UI
+                    const currRpBox = document.getElementById('currentRulingPlanetsContent');
+                    const currRp = result.current_ruling_planets;
+                    currRpBox.innerHTML = `
+                    <div class="curr-rp-level">
+                        <span>ယခုလက်ရှိအချိန် စိုးမိုးဂြိုဟ်များ (Current 5 Ruling Planets)</span>
+                        <span class="curr-rp-badge">⚡ Current RPs</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                        <span class="badge" style="background: #f39c12; font-size: 14px; padding: 6px 12px;">လက်ရှိလဂ်သခင်: ${currRp.lagna_sign_lord}</span>
+                        <span class="badge" style="background: #f39c12; font-size: 14px; padding: 6px 12px;">လက်ရှိလဂ်နက္ခတ်သခင်: ${currRp.lagna_star_lord}</span>
+                        <span class="badge" style="background: #e67e22; font-size: 14px; padding: 6px 12px;">လက်ရှိစန်းသခင်: ${currRp.moon_sign_lord}</span>
+                        <span class="badge" style="background: #e67e22; font-size: 14px; padding: 6px 12px;">လက်ရှိစန်းနက္ခတ်သခင်: ${currRp.moon_star_lord}</span>
+                        <span class="badge" style="background: #d35400; font-size: 14px; padding: 6px 12px;">ယနေ့နေ့နံသခင်: ${currRp.day_lord}</span>
+                    </div>`;
+
+                    // Daily Moon Transit UI
+                    const dailyBox = document.getElementById('dailyContent');
+                    const dData = result.daily;
+                    dailyBox.innerHTML = `
+                    <div class="daily-level">
+                        <span>ယနေ့ စန်းသည် <b>${dData.sign}</b> ရာသီ၊ <b>${dData.star_lord}</b> နက္ခတ်တွင် ဖြတ်သန်းနေပါသည်။</span>
+                        <span class="daily-badge">ယနေ့ရက်စွဲ: ${dData.date}</span>
+                    </div>
+                    <div class="pred-sigs">ယနေ့အတွက် စန်းနှင့် နက္ခတ်သခင်တို့၏ အကျိုးဆောင်ဘာဝများ = <span class="highlight">${dData.sigs.join(", ")}</span></div>
+                    ${dData.preds.map(pr => `<div class="daily-text">${pr}</div>`).join('')}`;
+
+                    // Combined Predictions UI
+                    const predBox = document.getElementById('predictionContent');
+                    predBox.innerHTML = "";
+                    const pData = result.predictions;
+                    if(pData.combined) {
+                        predBox.innerHTML += `
+                        <div class="pred-level">
+                            <span>🌟 ${pData.combined.title}</span>
+                            <span class="date-badge">📅 ${pData.combined.start} မှ ${pData.combined.end} အထိ</span>
+                        </div>
+                        <div class="pred-sigs">
+                            [ ${pData.combined.md_lord} : ${pData.combined.md_sigs.join(", ")} ] <br> 
+                            [ ${pData.combined.ad_lord} : ${pData.combined.ad_sigs.join(", ")} ] <br>
+                            <span style="display:inline-block; margin-top:8px;">ပေါင်းစပ် အကျိုးပေးမည့် ဘာဝများ = <span class="highlight">${pData.combined.combined_sigs.join(", ")}</span></span>
+                        </div>
+                        ${pData.combined.preds.map(pr => `<div class="pred-text">📌 ${pr}</div>`).join('')}`;
+                    }
+
+                    const signs = ["မိဿ", "ပြိဿ", "မေထုန်", "ကရကဋ်", "သိဟ်", "ကန်", "တူ", "ဗြိစ္ဆာ", "ဓနု", "မကာရ", "ကုံ", "မိန်"];
+                    signs.forEach(s => document.getElementById(`box-${s}`).innerHTML = "");
+                    document.getElementById(`box-${result.cusps[0].sign}`).innerHTML += `<div class="lagna-text">လဂ်</div>`;
+
+                    const planetBody = document.getElementById('planetBody');
+                    const sigBody = document.getElementById('sigBody');
+                    planetBody.innerHTML = ""; sigBody.innerHTML = "";
+
+                    result.planets.forEach(p => {
+                        planetBody.innerHTML += `<tr>
+                            <td style="font-weight:bold; color:#d35400;">${p.name}</td>
+                            <td>${p.degree}°</td><td>${p.sign}</td><td>${p.sign_lord}</td><td>${p.star_lord}</td><td>${p.sub_lord}</td>
+                        </tr>`;
+                        document.getElementById(`box-${p.sign}`).innerHTML += `<div>${p.name}</div>`;
+
+                        let l1 = p.L1.length > 0 ? p.L1.join(", ") : "-";
+                        let l2 = p.L2.length > 0 ? p.L2.join(", ") : "-";
+                        let l3 = p.L3.length > 0 ? p.L3.join(", ") : "-";
+                        let l4 = p.L4.length > 0 ? p.L4.join(", ") : "-";
+                        let allSigHtml = p.all_sig.map(num => `<span class="badge">${num}</span>`).join(" ");
+
+                        sigBody.innerHTML += `<tr>
+                            <td style="font-weight:bold; color:#27ae60;">${p.name}</td>
+                            <td>${l1}</td><td>${l2}</td><td>${l3}</td><td>${l4}</td><td>${allSigHtml}</td>
+                        </tr>`;
+                    });
+
+                    // Dasha UI Rendering
+                    const dashaDiv = document.getElementById('dashaAccordion');
+                    dashaDiv.innerHTML = "";
+                    result.dashas.forEach(md => {
+                        let isOpen = md.is_active ? "open" : "";
+                        let activeClass = md.is_active ? "md-active" : "";
+                        let mdHtml = `<details class="md-details" ${isOpen}>
+                            <summary class="md-summary ${activeClass}">
+                                <div class="d-row">
+                                    <span class="d-title">${md.is_active ? '✅' : '▶'} ${md.lord} မဟာဒသာ</span>
+                                    <span class="d-dates">${md.start} မှ ${md.end}</span>
+                                </div>
+                            </summary>`;
+                            
+                        md.ads.forEach(ad => {
+                            let isAdOpen = ad.is_active ? "open" : "";
+                            let adActiveClass = ad.is_active ? "ad-active" : "";
+                            mdHtml += `<details class="ad-details" ${isAdOpen}>
+                                <summary class="ad-summary ${adActiveClass}">
+                                    <div class="d-row">
+                                        <span class="d-title">${ad.is_active ? '👉' : '▶'} ${ad.lord} အန္တရဒသာ</span>
+                                        <span class="d-dates">${ad.start} မှ ${ad.end}</span>
+                                    </div>
+                                </summary>`;
+                                
+                            ad.pds.forEach(pd => {
+                                let pdActiveClass = pd.is_active ? "pd-active" : "";
+                                mdHtml += `<div class="pd-item ${pdActiveClass}">
+                                    <span class="d-title">${pd.is_active ? '📍' : ''} ${pd.lord} ပစ္စန္တရ</span>
+                                    <span class="d-dates">${pd.start} မှ ${pd.end}</span>
+                                </div>`;
+                            });
+                            mdHtml += `</details>`;
+                        });
+                        mdHtml += `</details>`;
+                        dashaDiv.innerHTML += mdHtml;
+                    });
+
+                    const cuspBody = document.getElementById('cuspBody');
+                    cuspBody.innerHTML = ""; 
+                    result.cusps.forEach(c => {
+                        cuspBody.innerHTML += `<tr>
+                            <td style="font-weight:bold; color:#2980b9;">${c.cusp}</td>
+                            <td>${c.degree}°</td><td>${c.sign}</td><td>${c.sign_lord}</td><td>${c.star_lord}</td><td>${c.sub_lord}</td>
+                        </tr>`;
+                    });
+                    
+                    document.getElementById('resultsArea').style.display = "block";
+                    document.getElementById('downloadPdfBtn').style.display = "block";
+                }
+            } catch (error) {
+                alert("API ချိတ်ဆက်၍ မရပါ။ Backend Server သို့မဟုတ် ထည့်သွင်းထားသော ရက်စွဲများ မှန်ကန်မှုရှိမရှိ စစ်ဆေးပါ။");
+            }
+        }
+        
+        function downloadPDF() {
+            const details = document.querySelectorAll('details');
+            details.forEach(d => d.setAttribute('open', 'true'));
+            
+            const element = document.getElementById('pdfContent');
+            const personName = document.getElementById('personName').value || "Unknown";
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `${personName}_KP_Chart.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
